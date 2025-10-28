@@ -1,0 +1,188 @@
+﻿@import url("./ref/common.css");
+/* 최소 UI 유지: 화이트 배경 + 아이콘 중심 컨트롤만 배치 */
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #111111;
+  display: flex;
+  justify-content: center;
+}
+
+.app-shell {
+  width: min(1280px, 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.app-header {
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.app-header .header-logo {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.viewer-stage {
+  position: relative;
+  flex: 1;
+  background: #ffffff;
+}
+
+model-viewer {
+  width: 100%;
+  height: 80%;
+  position: relative;
+  background: #ffffff;
+}
+
+.ar-entry-button {
+  position: absolute;
+  bottom: var(--ar-button-bottom, 24px);
+  right: var(--ar-button-right, 24px);
+  width: var(--ar-button-size, 36px);
+  height: var(--ar-button-size, 36px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 160ms ease;
+}
+
+.ar-entry-button:hover,
+.ar-entry-button:focus-visible {
+  transform: scale(1.05);
+  outline: none;
+}
+
+.ar-entry-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.overlay-control {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  transition: transform 120ms ease-in-out, box-shadow 160ms ease-in-out, background 120ms ease-in-out;
+}
+
+.overlay-control:hover,
+.overlay-control:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  outline: none;
+}
+
+.overlay-control img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.screen-hotspot {
+  position: fixed;
+  left: 50%;
+  bottom: 2rem;
+  pointer-events: auto;
+  --offset-x: -50%;
+  transform: translateX(var(--offset-x)) translateY(0);
+  opacity: 1;
+  transition: transform 160ms ease, background 120ms ease, opacity 240ms ease;
+  z-index: 40;
+}
+
+.screen-hotspot:hover,
+.screen-hotspot:focus-visible {
+  transform: translateX(var(--offset-x)) translateY(-3px);
+}
+
+#animation-toggle-button.screen-hotspot {
+  --offset-x: -140px;
+}
+
+#color-cycle-button.screen-hotspot {
+  --offset-x: -32px;
+}
+
+#rotate-button.screen-hotspot {
+  --offset-x: 76px;
+}
+
+.screen-hotspot.hotspot-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(var(--offset-x)) translateY(16px);
+}
+
+.hotspot-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  background: rgba(0, 0, 0, 0.08);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 120ms ease-in-out, background 120ms ease-in-out;
+}
+
+.hotspot-button img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.hotspot-button:hover,
+.hotspot-button:focus-visible {
+  transform: translateY(-3px);
+  background: rgba(0, 0, 0, 0.12);
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .overlay-control {
+    width: 72px;
+    height: 72px;
+  }
+
+  .screen-hotspot {
+    bottom: 1.25rem;
+  }
+}
+
+/* AR 세션 진입 시 표시되는 기본 바닥 리테일(사각형/원형)을 임시로 숨김 처리 */
+model-viewer::part(ar-hit-test),
+model-viewer::part(ar-hit-test-icon),
+model-viewer::part(ar-hit-test-dot),
+model-viewer::part(ar-hit-test-ring),
+model-viewer::part(ar-placement) {
+  opacity: 0 !important;
+  display: none !important;
+}
