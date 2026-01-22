@@ -18,6 +18,7 @@ const animationToggleButton = document.querySelector("#animation-toggle-button")
 const animationThumb = document.querySelector("#animation-thumb");
 const colorCycleButton = document.querySelector("#color-cycle-button");
 const rotateButton = document.querySelector("#rotate-button");
+const arButton = document.querySelector("#custom-ar-button");
 const screenHotspots = Array.from(document.querySelectorAll(".screen-hotspot"));
 
 /** 사용자 입력 후 핫스팟을 유지하는 시간(ms). */
@@ -66,14 +67,25 @@ let baseOrientation = { x: 0, y: 0, z: 0 };
 let hotspotHideTimer = null;
 let modelInitialized = false;
 
+/** AR 모드 진입 시도 플래그 (AR 버튼 클릭 시 true) */
+let arModeRequested = false;
+
 /**
  * AR 모드 여부를 확인한다.
- * model-viewer의 ar-status 속성을 직접 확인하여 더 정확한 상태를 반환한다.
+ * - model-viewer의 ar-status 속성 확인 (WebXR용)
+ * - arModeRequested 플래그 확인 (Scene Viewer/Quick Look용)
+ * - 페이지 visibility 확인 (앱 전환 감지)
  */
 function checkIsInAR() {
+  // AR 버튼이 클릭되어 AR 모드 진입 시도 중이면 true
+  if (arModeRequested) {
+    console.debug(`[AR Check] arModeRequested=true`);
+    return true;
+  }
+
   if (!modelViewer) return false;
 
-  // model-viewer의 ar-status 속성 직접 확인
+  // model-viewer의 ar-status 속성 직접 확인 (WebXR)
   const arStatus = modelViewer.getAttribute("ar-status");
   const isAR = arStatus === "session-started" || arStatus === "object-placed";
 
@@ -178,15 +190,50 @@ if (modelViewer) {
     if (status === "session-started" || status === "object-placed") {
       // AR 모드 진입 시 자동 회전 즉시 중지
       console.info("[AR] AR 모드 진입 - 자동 회전 중지");
+      arModeRequested = true;
       stopAutoRotation();
       showScreenHotspots();
-    } else {
+    } else if (status === "not-presenting" || status === "failed") {
       // AR 세션 종료 시
       console.info("[AR] AR 모드 종료");
+      arModeRequested = false;
       bumpHotspotVisibility();
     }
   });
 }
+
+/**
+ * AR 버튼 클릭 시 자동 회전 즉시 중지
+ * - WebXR, Scene Viewer, Quick Look 모두에서 작동
+ * - ar-status 이벤트보다 먼저 발생하므로 확실하게 회전 중지
+ */
+if (arButton) {
+  arButton.addEventListener("click", () => {
+    console.info("[AR] AR 버튼 클릭 - 자동 회전 중지");
+    arModeRequested = true;
+    stopAutoRotation();
+    clearTimeout(hotspotHideTimer);
+  });
+}
+
+/**
+ * Page Visibility API: Scene Viewer/Quick Look 앱 전환 감지
+ * - 페이지가 hidden 상태가 되면 AR 앱으로 전환된 것으로 간주
+ * - 페이지가 visible 상태로 돌아오면 AR 앱 종료로 간주
+ */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    // 페이지가 숨겨짐 (Scene Viewer/Quick Look으로 전환되었을 수 있음)
+    console.info("[Visibility] 페이지 hidden - 자동 회전 중지");
+    stopAutoRotation();
+    clearTimeout(hotspotHideTimer);
+  } else {
+    // 페이지가 다시 보임 (AR 앱에서 돌아옴)
+    console.info("[Visibility] 페이지 visible - AR 모드 해제");
+    arModeRequested = false;
+    bumpHotspotVisibility();
+  }
+});
 
 /**
  * 애니메이션 토글: Chair ↔ Stretch 전환 (0.3초 크로스페이드)
