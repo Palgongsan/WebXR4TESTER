@@ -70,6 +70,9 @@ let modelInitialized = false;
 /** AR 모드 진입 시도 플래그 (AR 버튼 클릭 시 true) */
 let arModeRequested = false;
 
+/** AR 진입 전 회전값 저장 (AR 종료 시 복원용) */
+let savedRotationBeforeAR = null;
+
 /**
  * AR 모드 여부를 확인한다.
  * - model-viewer의 ar-status 속성 확인 (WebXR용)
@@ -197,22 +200,36 @@ if (modelViewer) {
       // AR 세션 종료 시
       console.info("[AR] AR 모드 종료");
       arModeRequested = false;
+
+      // 저장된 회전값 복원
+      if (savedRotationBeforeAR !== null) {
+        console.info(`[AR] 회전값 복원: ${savedRotationBeforeAR}도`);
+        applyModelRotation(savedRotationBeforeAR);
+        savedRotationBeforeAR = null;
+      }
+
       bumpHotspotVisibility();
     }
   });
 }
 
 /**
- * AR 버튼 클릭 시 자동 회전 즉시 중지
+ * AR 버튼 클릭 시 자동 회전 즉시 중지 및 회전 초기화
  * - WebXR, Scene Viewer, Quick Look 모두에서 작동
  * - ar-status 이벤트보다 먼저 발생하므로 확실하게 회전 중지
+ * - 회전값을 저장하고 초기화하여 AR 인디케이터 크기 문제 해결
  */
 if (arButton) {
   arButton.addEventListener("click", () => {
-    console.info("[AR] AR 버튼 클릭 - 자동 회전 중지");
+    console.info("[AR] AR 버튼 클릭 - 자동 회전 중지 및 회전 초기화");
     arModeRequested = true;
     stopAutoRotation();
     clearTimeout(hotspotHideTimer);
+
+    // 현재 회전값 저장 후 초기화 (AR 인디케이터 크기 문제 해결)
+    savedRotationBeforeAR = rotationState.current;
+    console.info(`[AR] 회전값 저장: ${savedRotationBeforeAR}도 → 0도로 초기화`);
+    applyModelRotation(0);
   });
 }
 
@@ -231,6 +248,14 @@ document.addEventListener("visibilitychange", () => {
     // 페이지가 다시 보임 (AR 앱에서 돌아옴)
     console.info("[Visibility] 페이지 visible - AR 모드 해제");
     arModeRequested = false;
+
+    // 저장된 회전값 복원
+    if (savedRotationBeforeAR !== null) {
+      console.info(`[Visibility] 회전값 복원: ${savedRotationBeforeAR}도`);
+      applyModelRotation(savedRotationBeforeAR);
+      savedRotationBeforeAR = null;
+    }
+
     bumpHotspotVisibility();
   }
 });
@@ -336,6 +361,7 @@ function cancelRotationAnimation() {
 function applyModelRotation(angleDeg) {
   if (!modelViewer) return;
   rotationState.current = normalizeDegrees(angleDeg);
+  // Z축 회전 (이 모델에서는 Z축이 수평 회전)
   const newZ = baseOrientation.z + rotationState.current;
   const orientationString = formatOrientation({
     x: baseOrientation.x,
