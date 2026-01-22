@@ -64,8 +64,22 @@ const autoRotateState = {
 
 let baseOrientation = { x: 0, y: 0, z: 0 };
 let hotspotHideTimer = null;
-let isInAR = false;
 let modelInitialized = false;
+
+/**
+ * AR 모드 여부를 확인한다.
+ * model-viewer의 ar-status 속성을 직접 확인하여 더 정확한 상태를 반환한다.
+ */
+function checkIsInAR() {
+  if (!modelViewer) return false;
+
+  // model-viewer의 ar-status 속성 직접 확인
+  const arStatus = modelViewer.getAttribute("ar-status");
+  const isAR = arStatus === "session-started" || arStatus === "object-placed";
+
+  console.debug(`[AR Check] ar-status="${arStatus}", isInAR=${isAR}`);
+  return isAR;
+}
 
 /**
  * beforexrselect 이벤트를 막아 AR 제스처와 UI 상호작용이 충돌하지 않도록 한다.
@@ -103,8 +117,8 @@ function scheduleHotspotHide(delay = HOTSPOT_HIDE_DELAY) {
   clearTimeout(hotspotHideTimer);
   hotspotHideTimer = setTimeout(() => {
     screenHotspots.forEach((btn) => btn.classList.add("hotspot-hidden"));
-    // AR 모드에서는 자동 회전 비활성화
-    if (!isInAR) {
+    // AR 모드에서는 자동 회전 비활성화 (실시간 체크)
+    if (!checkIsInAR()) {
       startAutoRotation();
     }
   }, delay);
@@ -158,14 +172,17 @@ if (modelViewer) {
 
   modelViewer.addEventListener("ar-status", (event) => {
     const status = event.detail.status;
-    console.info(`[AR] status: ${status}`);
-    isInAR = status === "session-started";
+    console.info(`[AR] ar-status 이벤트: ${status}`);
 
-    if (isInAR) {
-      // AR 모드 진입 시 자동 회전 중지
+    // AR 세션 시작 또는 오브젝트 배치 시
+    if (status === "session-started" || status === "object-placed") {
+      // AR 모드 진입 시 자동 회전 즉시 중지
+      console.info("[AR] AR 모드 진입 - 자동 회전 중지");
       stopAutoRotation();
       showScreenHotspots();
     } else {
+      // AR 세션 종료 시
+      console.info("[AR] AR 모드 종료");
       bumpHotspotVisibility();
     }
   });
@@ -303,8 +320,8 @@ function easeInOutCubic(t) {
  * AR 모드에서는 실행되지 않음
  */
 function startAutoRotation() {
-  // AR 모드에서는 자동 회전 비활성화
-  if (isInAR) {
+  // AR 모드에서는 자동 회전 비활성화 (실시간 체크)
+  if (checkIsInAR()) {
     console.info("[AutoRotate] AR 모드에서는 자동 회전이 비활성화됩니다.");
     return;
   }
@@ -314,8 +331,8 @@ function startAutoRotation() {
   autoRotateState.lastTime = null;
 
   const autoRotateStep = (timestamp) => {
-    // AR 모드 진입 시 루프 자동 중단
-    if (!autoRotateState.isActive || isInAR) {
+    // AR 모드 진입 시 루프 자동 중단 (실시간 체크)
+    if (!autoRotateState.isActive || checkIsInAR()) {
       stopAutoRotation();
       return;
     }
