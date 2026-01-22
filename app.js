@@ -54,6 +54,14 @@ const rotationState = {
   raf: null,
 };
 
+/** 자동 회전 상태 */
+const autoRotateState = {
+  isActive: false,
+  raf: null,
+  lastTime: null,
+  speed: 10, // 초당 회전 각도 (deg/s) - 느린 속도
+};
+
 let baseOrientation = { x: 0, y: 0, z: 0 };
 let hotspotHideTimer = null;
 let isInAR = false;
@@ -84,16 +92,18 @@ screenHotspots.forEach((btn) => {
  */
 function showScreenHotspots() {
   clearTimeout(hotspotHideTimer);
+  stopAutoRotation();
   screenHotspots.forEach((btn) => btn.classList.remove("hotspot-hidden"));
 }
 
 /**
- * 일정 시간이 지나면 핫스팟을 숨긴다.
+ * 일정 시간이 지나면 핫스팟을 숨기고 자동 회전을 시작한다.
  */
 function scheduleHotspotHide(delay = HOTSPOT_HIDE_DELAY) {
   clearTimeout(hotspotHideTimer);
   hotspotHideTimer = setTimeout(() => {
     screenHotspots.forEach((btn) => btn.classList.add("hotspot-hidden"));
+    startAutoRotation();
   }, delay);
 }
 
@@ -214,6 +224,7 @@ rotateButton?.addEventListener("click", () => {
  * Z축 회전 애니메이션 (easeInOutCubic)
  */
 function startRotationAnimation(fromDeg, toDeg) {
+  stopAutoRotation();
   cancelRotationAnimation();
 
   rotationState.from = normalizeDegrees(fromDeg);
@@ -280,6 +291,47 @@ function shortestAngleDelta(fromDeg, toDeg) {
 
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+/**
+ * 자동 회전 시작: 느린 속도로 지속적으로 Z축 회전
+ */
+function startAutoRotation() {
+  if (autoRotateState.isActive || !modelViewer) return;
+
+  autoRotateState.isActive = true;
+  autoRotateState.lastTime = null;
+
+  const autoRotateStep = (timestamp) => {
+    if (!autoRotateState.isActive) return;
+
+    if (autoRotateState.lastTime === null) {
+      autoRotateState.lastTime = timestamp;
+    }
+
+    const deltaTime = (timestamp - autoRotateState.lastTime) / 1000; // 초 단위
+    autoRotateState.lastTime = timestamp;
+
+    // 현재 각도에서 deltaTime만큼 회전
+    const deltaAngle = autoRotateState.speed * deltaTime;
+    applyModelRotation(rotationState.current + deltaAngle);
+
+    autoRotateState.raf = requestAnimationFrame(autoRotateStep);
+  };
+
+  autoRotateState.raf = requestAnimationFrame(autoRotateStep);
+}
+
+/**
+ * 자동 회전 중지
+ */
+function stopAutoRotation() {
+  autoRotateState.isActive = false;
+  if (autoRotateState.raf !== null) {
+    cancelAnimationFrame(autoRotateState.raf);
+    autoRotateState.raf = null;
+  }
+  autoRotateState.lastTime = null;
 }
 
 /**
