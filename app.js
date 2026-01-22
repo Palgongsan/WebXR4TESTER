@@ -196,6 +196,9 @@ if (modelViewer) {
       arModeRequested = true;
       stopAutoRotation();
       showScreenHotspots();
+
+      // AR 인디케이터(바운딩 박스) 숨기기 시도
+      hideARIndicator();
     } else if (status === "not-presenting" || status === "failed") {
       // AR 세션 종료 시
       console.info("[AR] AR 모드 종료");
@@ -211,6 +214,42 @@ if (modelViewer) {
       bumpHotspotVisibility();
     }
   });
+
+  /**
+   * AR 인디케이터(바운딩 박스, 배치 원형 등)를 숨기는 함수
+   * model-viewer 내부 Three.js scene을 탐색하여 관련 요소를 숨김
+   */
+  function hideARIndicator() {
+    try {
+      // model-viewer 내부 렌더러/scene 접근
+      const scene = modelViewer[Object.getOwnPropertySymbols(modelViewer)
+        .find(s => s.description === 'scene')] || modelViewer.model;
+
+      if (!scene) {
+        console.warn("[AR] scene을 찾을 수 없습니다.");
+        return;
+      }
+
+      // scene 전체를 탐색하여 인디케이터 관련 요소 숨기기
+      scene.traverse?.((node) => {
+        const name = (node.name || '').toLowerCase();
+        // 인디케이터 관련 이름 패턴: ring, circle, shadow, indicator, reticle, placement
+        if (name.includes('ring') ||
+            name.includes('circle') ||
+            name.includes('indicator') ||
+            name.includes('reticle') ||
+            name.includes('placement') ||
+            name.includes('footprint')) {
+          console.info(`[AR] 인디케이터 숨김: ${node.name}`);
+          node.visible = false;
+        }
+      });
+
+      console.info("[AR] 인디케이터 숨김 시도 완료");
+    } catch (error) {
+      console.warn("[AR] 인디케이터 숨김 실패:", error);
+    }
+  }
 }
 
 /**
