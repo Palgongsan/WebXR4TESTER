@@ -177,27 +177,3 @@ model-viewer {
   }
 }
 
-/* AR 세션 진입 시 표시되는 기본 바닥 리테일(사각형/원형)을 숨김 처리 */
-model-viewer::part(ar-hit-test),
-model-viewer::part(ar-hit-test-icon),
-model-viewer::part(ar-hit-test-dot),
-model-viewer::part(ar-hit-test-ring),
-model-viewer::part(ar-placement),
-model-viewer::part(default-ar-button),
-model-viewer::part(reticle),
-model-viewer::part(footprint),
-model-viewer::part(shadow) {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  display: none !important;
-}
-
-/* AR 모드에서 canvas 내부 인디케이터 숨기기 시도 */
-model-viewer[ar-status="session-started"] .reticle,
-model-viewer[ar-status="session-started"] .footprint,
-model-viewer[ar-status="session-started"] .shadow-plane,
-model-viewer[ar-status="object-placed"] .reticle,
-model-viewer[ar-status="object-placed"] .footprint {
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
