@@ -97,13 +97,16 @@ function showScreenHotspots() {
 }
 
 /**
- * 일정 시간이 지나면 핫스팟을 숨기고 자동 회전을 시작한다.
+ * 일정 시간이 지나면 핫스팟을 숨기고, AR 모드가 아닐 때만 자동 회전을 시작한다.
  */
 function scheduleHotspotHide(delay = HOTSPOT_HIDE_DELAY) {
   clearTimeout(hotspotHideTimer);
   hotspotHideTimer = setTimeout(() => {
     screenHotspots.forEach((btn) => btn.classList.add("hotspot-hidden"));
-    startAutoRotation();
+    // AR 모드에서는 자동 회전 비활성화
+    if (!isInAR) {
+      startAutoRotation();
+    }
   }, delay);
 }
 
@@ -159,6 +162,8 @@ if (modelViewer) {
     isInAR = status === "session-started";
 
     if (isInAR) {
+      // AR 모드 진입 시 자동 회전 중지
+      stopAutoRotation();
       showScreenHotspots();
     } else {
       bumpHotspotVisibility();
