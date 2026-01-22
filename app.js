@@ -300,15 +300,25 @@ function easeInOutCubic(t) {
 
 /**
  * 자동 회전 시작: 느린 속도로 지속적으로 Z축 회전
+ * AR 모드에서는 실행되지 않음
  */
 function startAutoRotation() {
+  // AR 모드에서는 자동 회전 비활성화
+  if (isInAR) {
+    console.info("[AutoRotate] AR 모드에서는 자동 회전이 비활성화됩니다.");
+    return;
+  }
   if (autoRotateState.isActive || !modelViewer) return;
 
   autoRotateState.isActive = true;
   autoRotateState.lastTime = null;
 
   const autoRotateStep = (timestamp) => {
-    if (!autoRotateState.isActive) return;
+    // AR 모드 진입 시 루프 자동 중단
+    if (!autoRotateState.isActive || isInAR) {
+      stopAutoRotation();
+      return;
+    }
 
     if (autoRotateState.lastTime === null) {
       autoRotateState.lastTime = timestamp;
